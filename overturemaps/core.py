@@ -5,6 +5,7 @@ import pyarrow.compute as pc
 import pyarrow.dataset as ds
 import pyarrow.fs as fs
 import pyarrow.parquet as pq
+from tqdm import tqdm
 
 from urllib.request import urlopen
 import io
@@ -125,7 +126,8 @@ def record_batch_reader(
     # each one bloating the size of a parquet file. Just omit
     # them so the RecordBatchReader only has non-empty ones. Use
     # the generator syntax so the batches are streamed out
-    non_empty_batches = (b for b in batches if b.num_rows > 0)
+    row_count = dataset.count_rows()
+    non_empty_batches = (b for b in tqdm(batches, desc=f"Processing batches for {overture_type}", total=row_count) if b.num_rows > 0)
 
     geoarrow_schema = geoarrow_schema_adapter(dataset.schema)
     reader = pa.RecordBatchReader.from_batches(geoarrow_schema, non_empty_batches)
